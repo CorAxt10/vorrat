@@ -175,6 +175,23 @@
   .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; }
   .toggle-row input { width: auto; transform: scale(1.3); accent-color: var(--accent); }
 
+  .release { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 14px; }
+  .release-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .release-head strong { font-size: 17px; }
+  .release-head span { font-size: 13px; color: var(--muted); }
+  .release ul { margin: 0; padding-left: 20px; }
+  .release li { margin: 6px 0; }
+  .release .neu { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--accent); color: #fff; margin-left: 6px; vertical-align: 2px; }
+  @media (prefers-color-scheme: dark) { .release .neu { color: #10231b; } }
+
+  .idee { display: flex; align-items: flex-start; gap: 10px; padding: 12px 8px 12px 14px; border-top: 1px solid var(--line); }
+  .idee:first-child { border-top: 0; }
+  .idee input[type=checkbox] { width: 22px; height: 22px; margin: 1px 0 0; flex: none; accent-color: var(--accent); }
+  .idee-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .idee-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .idee.done .idee-text > div:first-child { text-decoration: line-through; color: var(--muted); }
+  .idee .del { color: var(--danger); padding: 0 6px; font-size: 18px; flex: none; }
+
   .toast {
     position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%);
     background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 14px;
@@ -187,7 +204,7 @@
 
 <!-- ================= LOGIN ================= -->
 <section id="login" class="hidden">
-  <h1>🫙 Vorrat</h1>
+  <h1>Vorrat</h1>
   <p>Bitte melde dich an.</p>
   <form id="loginForm">
     <input id="loginEmail" type="email" placeholder="E-Mail" autocomplete="username" required>
@@ -303,6 +320,18 @@
       </label>
     </div>
 
+    <div class="section-title">Über die App</div>
+    <div class="list-card">
+      <button class="toggle-row" id="releaseBtn" style="width:100%;text-align:left">
+        <span>Release Notes</span>
+        <span style="color:var(--muted)"><span id="versionLabel"></span> ›</span>
+      </button>
+      <button class="toggle-row" id="ideenBtn" style="width:100%;text-align:left;border-top:1px solid var(--line)">
+        <span>Ideen für künftige Versionen</span>
+        <span style="color:var(--muted)"><span id="ideenCount"></span> ›</span>
+      </button>
+    </div>
+
     <div class="section-title">Konto</div>
     <div class="list-card">
       <div class="toggle-row"><span id="userEmail" style="color:var(--muted)"></span></div>
@@ -310,6 +339,37 @@
     <div class="sheet-actions">
       <button class="btn-danger" id="logoutBtn">Abmelden</button>
     </div>
+  </div>
+</div>
+
+<!-- ================= SHEET: Release Notes ================= -->
+<div class="backdrop" id="releaseSheet">
+  <div class="sheet">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <span style="width:70px"></span>
+      <h3>Release Notes</h3>
+      <button class="link-btn" data-close style="width:70px;text-align:right">Fertig</button>
+    </div>
+    <div id="releaseList"></div>
+  </div>
+</div>
+
+<!-- ================= SHEET: Ideen ================= -->
+<div class="backdrop" id="ideenSheet">
+  <div class="sheet">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <span style="width:70px"></span>
+      <h3>Ideen</h3>
+      <button class="link-btn" data-close style="width:70px;text-align:right">Fertig</button>
+    </div>
+    <p style="color:var(--muted);margin:0 4px 12px;font-size:14px">Wünsche und Ideen für künftige Versionen der App. Abhaken, wenn umgesetzt.</p>
+    <div class="add-row" style="margin:0 0 14px">
+      <input id="neueIdee" placeholder="Neue Idee …" autocomplete="off" enterkeyhint="done">
+      <button id="addIdeeBtn">Hinzufügen</button>
+    </div>
+    <div id="ideenList"></div>
   </div>
 </div>
 
@@ -322,6 +382,33 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const SUPABASE_URL = 'https://ffywmljcepggpyhnzhfa.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_okkRYt9NmqE4g51mX_WBNQ_7NDPuQqR';
 const EINHEITEN = ['Stück', 'Packung', 'Portion', 'g', 'kg', 'ml', 'l', 'Dose', 'Glas', 'Flasche', 'Beutel'];
+
+// ================= RELEASE NOTES =================
+// Neue Version: oben einen Eintrag ergänzen. Die App zeigt die Neuerungen einmalig nach dem Update an.
+const RELEASES = [
+  {
+    version: '1.1', datum: '07.11.2026', titel: 'Ideen-Sammlung',
+    punkte: [
+      'Neuer Bereich „Ideen für künftige Versionen“ unter ⚙︎ → Über die App: Ideen gemeinsam sammeln, abhaken und löschen',
+      'Schlichtere Anmeldeseite',
+    ],
+  },
+  {
+    version: '1.0', datum: '07.11.2026', titel: 'Die erste Version',
+    punkte: [
+      'Anmeldung mit eigenem Login für jede Person',
+      'Vorräte nach Kategorien sortiert: Gruppen lassen sich zuklappen, dazu Suche und Filter nach Lagerort',
+      '− / + direkt in der Liste: bei g und ml in 100er-Schritten, bei kg und l in 0,5er-Schritten, sonst um 1',
+      'Antippen eines Vorrats öffnet die Bearbeitung: Name, Menge, Einheit, Kategorie, Lagerort, Haltbarkeit und Notiz. Dort steht auch, wer zuletzt etwas geändert hat, und der Vorrat lässt sich löschen',
+      'Neue Kategorien und Lagerorte direkt beim Eintragen anlegen („＋ Neue Kategorie …“) oder unter ⚙︎ – dort auch umbenennen und löschen',
+      'Haltbarkeit: Was in weniger als 30 Tagen abläuft, ist orange markiert',
+      'Aufgebrauchte Vorräte (Menge 0) bleiben ausgegraut stehen und lassen sich unter ⚙︎ ausblenden',
+      'Live-Abgleich: Ändert jemand etwas, sehen es alle anderen sofort',
+      'Release Notes unter ⚙︎ → Über die App',
+    ],
+  },
+];
+const APP_VERSION = RELEASES[0].version;
 
 const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true }
@@ -404,6 +491,8 @@ function startApp() {
   $('userEmail').textContent = 'Angemeldet als ' + state.user.email;
   loadAll();
   subscribe();
+  zeigeNeuerungen();
+  loadIdeen();
 }
 function stopApp() {
   if (channel) { db.removeChannel(channel); channel = null; }
@@ -449,12 +538,13 @@ function subscribe() {
   for (const table of ['vorraete', 'kategorien', 'lagerorte']) {
     channel.on('postgres_changes', { event: '*', schema: 'public', table }, scheduleReload);
   }
+  channel.on('postgres_changes', { event: '*', schema: 'public', table: 'ideen' }, () => loadIdeen());
   channel.subscribe();
 }
 
 // Auf dem iPhone wird die Verbindung im Hintergrund oft getrennt → beim Zurückkehren neu laden
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && state.user) { subscribe(); loadAll(); }
+  if (document.visibilityState === 'visible' && state.user) { subscribe(); loadAll(); loadIdeen(); }
 });
 window.addEventListener('online', () => state.user && loadAll());
 window.addEventListener('offline', () => setOffline(true));
@@ -729,6 +819,85 @@ document.addEventListener('click', async (e) => {
   const { error } = await db.from(table).delete().eq('id', id);
   if (error) return fehler(error, 'Löschen fehlgeschlagen');
   toast('Gelöscht'); loadAll();
+});
+
+// ================= RELEASE NOTES ANZEIGEN =================
+$('versionLabel').textContent = 'Version ' + APP_VERSION;
+function renderReleases() {
+  $('releaseList').innerHTML = RELEASES.map((r, i) => `
+    <div class="release">
+      <div class="release-head">
+        <strong>Version ${esc(r.version)}${i === 0 ? '<span class="neu">aktuell</span>' : ''}</strong>
+        <span>${esc(r.datum)}</span>
+      </div>
+      ${r.titel ? `<div style="color:var(--muted);margin-bottom:6px">${esc(r.titel)}</div>` : ''}
+      <ul>${r.punkte.map(p => `<li>${esc(p)}</li>`).join('')}</ul>
+    </div>`).join('');
+}
+function openReleases() { renderReleases(); openSheet('releaseSheet'); save('gesehenVersion', APP_VERSION); }
+$('releaseBtn').addEventListener('click', () => { closeSheet('settingsSheet'); setTimeout(openReleases, 250); });
+
+// Nach einem Update einmalig zeigen, was neu ist (nicht beim allerersten Öffnen)
+function zeigeNeuerungen() {
+  const gesehen = load('gesehenVersion', null);
+  if (gesehen === null) { save('gesehenVersion', APP_VERSION); return; }
+  if (gesehen !== APP_VERSION) setTimeout(openReleases, 600);
+}
+
+// ================= IDEEN =================
+let ideen = [], ideenFehlt = false;
+async function loadIdeen() {
+  const { data, error } = await db.from('ideen').select('*');
+  if (error) { ideenFehlt = true; console.error(error); }
+  else { ideenFehlt = false; ideen = data; }
+  renderIdeen();
+}
+function renderIdeen() {
+  const offen = ideen.filter(i => !i.erledigt).length;
+  $('ideenCount').textContent = offen ? offen + ' offen' : '';
+  if (ideenFehlt) {
+    $('ideenList').innerHTML = `<div class="empty-state" style="padding:24px">Die Ideen-Tabelle fehlt noch in Supabase.</div>`;
+    return;
+  }
+  const sortiert = [...ideen].sort((a, b) => (a.erledigt - b.erledigt) || ((Date.parse(b.erstellt_am) || Date.now()) - (Date.parse(a.erstellt_am) || Date.now())));
+  $('ideenList').innerHTML = sortiert.length ? `<div class="list-card">${sortiert.map(i => `
+    <div class="idee ${i.erledigt ? 'done' : ''}">
+      <input type="checkbox" data-idee-toggle="${i.id}" ${i.erledigt ? 'checked' : ''} aria-label="umgesetzt">
+      <div class="idee-text">
+        <div>${esc(i.text)}</div>
+        <div class="idee-meta">${i.erstellt_am ? new Date(i.erstellt_am).toLocaleDateString('de-DE') : 'gerade eben'}${i.erstellt_von ? ' · ' + esc(i.erstellt_von) : ''}</div>
+      </div>
+      <button class="del" data-idee-del="${i.id}" aria-label="Löschen">✕</button>
+    </div>`).join('')}</div>`
+    : `<div class="empty-state" style="padding:24px">Noch keine Ideen – leg los!</div>`;
+}
+$('ideenBtn').addEventListener('click', () => { closeSheet('settingsSheet'); loadIdeen(); setTimeout(() => openSheet('ideenSheet'), 250); });
+
+async function addIdee() {
+  const text = $('neueIdee').value.trim(); if (!text) return;
+  const { data, error } = await db.from('ideen').insert({ text }).select().single();
+  if (error) return fehler(error, 'Idee nicht gespeichert');
+  $('neueIdee').value = '';
+  ideen.push(data); renderIdeen(); toast('Idee gespeichert');
+}
+$('addIdeeBtn').addEventListener('click', addIdee);
+$('neueIdee').addEventListener('keydown', (e) => { if (e.key === 'Enter') addIdee(); });
+
+$('ideenList').addEventListener('change', async (e) => {
+  const cb = e.target.closest('[data-idee-toggle]'); if (!cb) return;
+  const id = Number(cb.dataset.ideeToggle), erledigt = cb.checked;
+  const i = ideen.find(x => x.id === id); if (i) i.erledigt = erledigt;
+  renderIdeen();
+  const { error } = await db.from('ideen').update({ erledigt }).eq('id', id);
+  if (error) { fehler(error); loadIdeen(); }
+});
+$('ideenList').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-idee-del]'); if (!b) return;
+  const id = Number(b.dataset.ideeDel);
+  if (!confirm('Diese Idee löschen?')) return;
+  const { error } = await db.from('ideen').delete().eq('id', id);
+  if (error) return fehler(error, 'Löschen fehlgeschlagen');
+  ideen = ideen.filter(x => x.id !== id); renderIdeen();
 });
 
 // ================= START =================
