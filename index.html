@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vorrat</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Vorrat">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f6f1e9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1c1a17" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-512.png">
+<style>
+  :root {
+    --bg: #f6f1e9;
+    --card: #ffffff;
+    --text: #2b2620;
+    --muted: #8a8075;
+    --line: #e8e0d4;
+    --accent: #2f7d63;
+    --accent-soft: #e2f0ea;
+    --warn: #c2410c;
+    --warn-soft: #fdebdc;
+    --danger: #b91c1c;
+    --shadow: 0 1px 2px rgba(60, 40, 20, .06), 0 2px 8px rgba(60, 40, 20, .05);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1a17;
+      --card: #28251f;
+      --text: #f1ece4;
+      --muted: #a39a8e;
+      --line: #3a362f;
+      --accent: #5cc29c;
+      --accent-soft: #233a31;
+      --warn: #fb923c;
+      --warn-soft: #3d2a1c;
+      --danger: #f87171;
+      --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    min-height: 100vh;
+  }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+  input, select, textarea {
+    font: inherit; color: var(--text); background: var(--card);
+    border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; width: 100%;
+    font-size: 16px; /* verhindert Zoom auf dem iPhone */
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .hidden { display: none !important; }
+
+  /* ---------- Login ---------- */
+  #login { max-width: 360px; margin: 0 auto; padding: 18vh 24px 24px; }
+  #login h1 { font-size: 34px; margin: 0 0 4px; }
+  #login p { color: var(--muted); margin: 0 0 28px; }
+  #login form { display: grid; gap: 12px; }
+  .btn-primary {
+    background: var(--accent); color: #fff; border-radius: 12px; padding: 13px 16px; font-weight: 600;
+  }
+  @media (prefers-color-scheme: dark) { .btn-primary { color: #10231b; } }
+  .btn-primary:disabled { opacity: .6; }
+  .error { color: var(--danger); font-size: 14px; min-height: 20px; }
+
+  /* ---------- Kopfbereich ---------- */
+  header {
+    position: sticky; top: 0; z-index: 5; background: var(--bg);
+    padding: 12px 16px 8px; border-bottom: 1px solid transparent;
+  }
+  header.scrolled { border-bottom-color: var(--line); }
+  .topline { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .topline h1 { font-size: 28px; margin: 0; letter-spacing: -.02em; }
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--card); box-shadow: var(--shadow); font-size: 19px;
+  }
+  .search { margin-top: 10px; position: relative; }
+  .search input { padding-left: 36px; border-radius: 12px; }
+  .search span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+  .chips { display: flex; gap: 8px; overflow-x: auto; margin: 10px -16px 0; padding: 0 16px 2px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; padding: 7px 14px; border-radius: 999px; background: var(--card);
+    border: 1px solid var(--line); font-size: 14px; white-space: nowrap;
+  }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { .chip.active { color: #10231b; } }
+
+  .banner {
+    margin: 8px 16px 0; padding: 9px 12px; border-radius: 10px; font-size: 14px;
+    background: var(--warn-soft); color: var(--warn);
+  }
+
+  /* ---------- Liste ---------- */
+  main { padding: 6px 16px 110px; }
+  .group { margin-top: 16px; }
+  .group-head {
+    display: flex; align-items: center; justify-content: space-between; width: 100%;
+    padding: 4px 4px 8px; text-align: left;
+  }
+  .group-head h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0; font-weight: 600; }
+  .group-head .count { font-size: 13px; color: var(--muted); }
+  .group-head .arrow { display: inline-block; transition: transform .15s; margin-right: 6px; }
+  .group.collapsed .arrow { transform: rotate(-90deg); }
+  .group.collapsed .items { display: none; }
+  .items { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 14px; border-top: 1px solid var(--line); }
+  .item:first-child { border-top: 0; }
+  .item.empty .item-name, .item.empty .qty { opacity: .45; }
+  .item-main { flex: 1; min-width: 0; text-align: left; padding: 2px 0; }
+  .item-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item-sub { font-size: 13px; color: var(--muted); display: flex; gap: 6px; flex-wrap: wrap; margin-top: 1px; }
+  .item-sub > span:not(.badge):not(:first-child)::before { content: "· "; }
+  .badge { font-size: 12px; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .stepper { display: flex; align-items: center; gap: 2px; flex: none; }
+  .stepper button {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--bg); font-size: 20px; line-height: 1;
+    display: grid; place-items: center; color: var(--accent); font-weight: 600;
+  }
+  .stepper button:active { background: var(--accent-soft); }
+  .qty { min-width: 74px; text-align: center; font-variant-numeric: tabular-nums; font-size: 15px; }
+  .qty small { color: var(--muted); font-size: 13px; }
+  .empty-state { text-align: center; color: var(--muted); padding: 48px 16px; }
+
+  .fab {
+    position: fixed; right: calc(20px + env(safe-area-inset-right)); bottom: calc(22px + env(safe-area-inset-bottom));
+    width: 58px; height: 58px; border-radius: 50%; background: var(--accent); color: #fff;
+    font-size: 30px; line-height: 1; box-shadow: 0 6px 18px rgba(47, 125, 99, .35); z-index: 6;
+  }
+  @media (prefers-color-scheme: dark) { .fab { color: #10231b; } }
+
+  /* ---------- Bottom-Sheets ---------- */
+  .backdrop {
+    position: fixed; inset: 0; background: rgba(20, 15, 10, .35); z-index: 20;
+    display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .backdrop.open { opacity: 1; pointer-events: auto; }
+  .sheet {
+    background: var(--bg); width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto;
+    border-radius: 20px 20px 0 0; padding: 8px 18px calc(22px + env(safe-area-inset-bottom));
+    transform: translateY(100%); transition: transform .25s ease;
+  }
+  .backdrop.open .sheet { transform: none; }
+  .grabber { width: 38px; height: 5px; border-radius: 3px; background: var(--line); margin: 4px auto 10px; }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .sheet-head h3 { margin: 0; font-size: 20px; }
+  .link-btn { color: var(--accent); font-weight: 600; padding: 6px 2px; }
+  .field { display: grid; gap: 5px; margin-bottom: 12px; }
+  .field label { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sheet-actions { display: grid; gap: 10px; margin-top: 18px; }
+  .btn-danger { color: var(--danger); padding: 12px; border-radius: 12px; background: var(--card); font-weight: 500; }
+  .meta { font-size: 12px; color: var(--muted); text-align: center; margin-top: 12px; }
+
+  .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 4px 8px; font-weight: 600; }
+  .list-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .list-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; border-top: 1px solid var(--line); }
+  .list-row:first-child { border-top: 0; }
+  .list-row input { border: 0; padding: 8px 4px; background: transparent; }
+  .list-row input:focus { outline: none; }
+  .list-row .del { color: var(--danger); padding: 8px; font-size: 18px; }
+  .add-row { display: flex; gap: 8px; margin-top: 8px; }
+  .add-row button { flex: none; padding: 0 16px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; }
+  .toggle-row input { width: auto; transform: scale(1.3); accent-color: var(--accent); }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 14px;
+    z-index: 30; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; text-align: center;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<section id="login" class="hidden">
+  <h1>🫙 Vorrat</h1>
+  <p>Bitte melde dich an.</p>
+  <form id="loginForm">
+    <input id="loginEmail" type="email" placeholder="E-Mail" autocomplete="username" required>
+    <input id="loginPassword" type="password" placeholder="Passwort" autocomplete="current-password" required>
+    <div class="error" id="loginError"></div>
+    <button class="btn-primary" id="loginBtn" type="submit">Anmelden</button>
+  </form>
+</section>
+
+<!-- ================= APP ================= -->
+<section id="app" class="hidden">
+  <header id="header">
+    <div class="topline">
+      <h1>Vorrat</h1>
+      <button class="icon-btn" id="settingsBtn" aria-label="Einstellungen">⚙︎</button>
+    </div>
+    <div class="search">
+      <span>🔍</span>
+      <input id="search" type="search" placeholder="Suchen …" autocomplete="off">
+    </div>
+    <div class="chips" id="locationChips"></div>
+  </header>
+  <div class="banner hidden" id="offlineBanner">Keine Verbindung – Änderungen werden evtl. nicht gespeichert.</div>
+  <main id="list"></main>
+  <button class="fab" id="addBtn" aria-label="Vorrat hinzufügen">+</button>
+</section>
+
+<!-- ================= SHEET: Vorrat bearbeiten ================= -->
+<div class="backdrop" id="itemSheet">
+  <div class="sheet">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <button class="link-btn" data-close>Abbrechen</button>
+      <h3 id="itemSheetTitle">Vorrat</h3>
+      <button class="link-btn" id="saveItemBtn">Sichern</button>
+    </div>
+    <form id="itemForm" onsubmit="return false">
+      <div class="field">
+        <label for="fName">Name</label>
+        <input id="fName" required autocomplete="off" placeholder="z. B. Rinderhack">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="fMenge">Menge</label>
+          <input id="fMenge" inputmode="decimal" autocomplete="off" placeholder="1">
+        </div>
+        <div class="field">
+          <label for="fEinheit">Einheit</label>
+          <select id="fEinheit"></select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="fKategorie">Kategorie</label>
+        <select id="fKategorie"></select>
+      </div>
+      <div class="field hidden" id="newKatField">
+        <label for="fNewKat">Neue Kategorie</label>
+        <input id="fNewKat" autocomplete="off" placeholder="Name der neuen Kategorie">
+      </div>
+      <div class="field">
+        <label for="fLagerort">Lagerort</label>
+        <select id="fLagerort"></select>
+      </div>
+      <div class="field hidden" id="newOrtField">
+        <label for="fNewOrt">Neuer Lagerort</label>
+        <input id="fNewOrt" autocomplete="off" placeholder="z. B. Kühlschrank">
+      </div>
+      <div class="field">
+        <label for="fAblauf">Haltbar bis (optional)</label>
+        <input id="fAblauf" type="date">
+      </div>
+      <div class="field">
+        <label for="fNotiz">Notiz (optional)</label>
+        <textarea id="fNotiz" rows="2"></textarea>
+      </div>
+    </form>
+    <div class="sheet-actions">
+      <button class="btn-danger hidden" id="deleteItemBtn">Vorrat löschen</button>
+    </div>
+    <div class="meta" id="itemMeta"></div>
+  </div>
+</div>
+
+<!-- ================= SHEET: Einstellungen ================= -->
+<div class="backdrop" id="settingsSheet">
+  <div class="sheet">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <span style="width:70px"></span>
+      <h3>Einstellungen</h3>
+      <button class="link-btn" data-close style="width:70px;text-align:right">Fertig</button>
+    </div>
+
+    <div class="section-title">Kategorien</div>
+    <div class="list-card" id="katList"></div>
+    <div class="add-row">
+      <input id="newKatName" placeholder="Neue Kategorie" autocomplete="off">
+      <button id="addKatBtn">Hinzufügen</button>
+    </div>
+
+    <div class="section-title">Lagerorte</div>
+    <div class="list-card" id="ortList"></div>
+    <div class="add-row">
+      <input id="newOrtName" placeholder="Neuer Lagerort" autocomplete="off">
+      <button id="addOrtBtn">Hinzufügen</button>
+    </div>
+
+    <div class="section-title">Anzeige</div>
+    <div class="list-card">
+      <label class="toggle-row">
+        <span>Aufgebrauchte Vorräte anzeigen</span>
+        <input type="checkbox" id="showEmptyToggle">
+      </label>
+    </div>
+
+    <div class="section-title">Konto</div>
+    <div class="list-card">
+      <div class="toggle-row"><span id="userEmail" style="color:var(--muted)"></span></div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-danger" id="logoutBtn">Abmelden</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+// ================= KONFIGURATION =================
+const SUPABASE_URL = 'https://ffywmljcepggpyhnzhfa.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_okkRYt9NmqE4g51mX_WBNQ_7NDPuQqR';
+const EINHEITEN = ['Stück', 'Packung', 'Portion', 'g', 'kg', 'ml', 'l', 'Dose', 'Glas', 'Flasche', 'Beutel'];
+
+const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true }
+});
+
+// ================= ZUSTAND =================
+const state = {
+  vorraete: [], kategorien: [], lagerorte: [],
+  ort: 'alle',                 // aktiver Lagerort-Filter
+  suche: '',
+  collapsed: new Set(load('collapsed', [])),
+  showEmpty: load('showEmpty', true),
+  editingId: null,
+  user: null,
+};
+const pendingSaves = new Map(); // id -> Timer (verzögertes Speichern bei +/-)
+let channel = null;
+
+// ================= HILFSFUNKTIONEN =================
+const $ = (id) => document.getElementById(id);
+const nf = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function load(key, fallback) { try { const v = localStorage.getItem('vorrat_' + key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } }
+function save(key, value) { try { localStorage.setItem('vorrat_' + key, JSON.stringify(value)); } catch {} }
+function parseZahl(s) { const n = parseFloat(String(s).replace(',', '.').trim()); return isNaN(n) ? null : n; }
+function schritt(einheit) { return ({ g: 100, ml: 100, kg: 0.5, l: 0.5 })[einheit] ?? 1; }
+function byName(a, b) { return a.name.localeCompare(b.name, 'de'); }
+function bySort(a, b) { return (a.sortierung - b.sortierung) || byName(a, b); }
+
+let toastTimer;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function fehler(err, text = 'Das hat nicht geklappt') {
+  console.error(err);
+  toast(text + (err?.message ? ': ' + err.message : ''));
+}
+
+function ablaufInfo(datum) {
+  if (!datum) return null;
+  const heute = new Date(); heute.setHours(0, 0, 0, 0);
+  const d = new Date(datum + 'T00:00:00');
+  const tage = Math.round((d - heute) / 86400000);
+  const text = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  if (tage < 0) return { text: 'abgelaufen ' + text, warn: true };
+  if (tage <= 30) return { text: 'bis ' + text, warn: true };
+  return { text: 'bis ' + text, warn: false };
+}
+
+// ================= ANMELDUNG =================
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('loginBtn').disabled = true; $('loginError').textContent = '';
+  const { error } = await db.auth.signInWithPassword({
+    email: $('loginEmail').value.trim(), password: $('loginPassword').value
+  });
+  $('loginBtn').disabled = false;
+  if (error) {
+    $('loginError').textContent = error.message.includes('Invalid login')
+      ? 'E-Mail oder Passwort ist falsch.' : 'Anmeldung fehlgeschlagen: ' + error.message;
+  }
+});
+
+$('logoutBtn').addEventListener('click', async () => {
+  closeSheet('settingsSheet');
+  await db.auth.signOut();
+});
+
+db.auth.onAuthStateChange((event, session) => {
+  const user = session?.user ?? null;
+  // setTimeout: Supabase empfiehlt, im Callback keine weiteren Abfragen direkt zu starten
+  if (user && !state.user) { state.user = user; setTimeout(startApp, 0); }
+  else if (!user && state.user !== false) { state.user = false; setTimeout(stopApp, 0); }
+});
+
+function startApp() {
+  $('login').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  $('userEmail').textContent = 'Angemeldet als ' + state.user.email;
+  loadAll();
+  subscribe();
+}
+function stopApp() {
+  if (channel) { db.removeChannel(channel); channel = null; }
+  state.vorraete = []; state.kategorien = []; state.lagerorte = [];
+  $('app').classList.add('hidden');
+  $('login').classList.remove('hidden');
+  $('loginPassword').value = '';
+}
+
+// ================= DATEN LADEN & LIVE-SYNC =================
+let loading = false, reloadQueued = false;
+async function loadAll() {
+  if (pendingSaves.size) { reloadQueued = true; return; } // nicht während +/- -Eingaben überschreiben
+  if (loading) { reloadQueued = true; return; }
+  loading = true;
+  try {
+    const [v, k, l] = await Promise.all([
+      db.from('vorraete').select('*'),
+      db.from('kategorien').select('*'),
+      db.from('lagerorte').select('*'),
+    ]);
+    const err = v.error || k.error || l.error;
+    if (err) throw err;
+    state.vorraete = v.data; state.kategorien = k.data.sort(bySort); state.lagerorte = l.data.sort(bySort);
+    if (state.ort !== 'alle' && !state.lagerorte.some(o => o.id === state.ort)) state.ort = 'alle';
+    setOffline(false);
+    render();
+  } catch (err) {
+    setOffline(true);
+    console.error(err);
+  } finally {
+    loading = false;
+    if (reloadQueued && !pendingSaves.size) { reloadQueued = false; loadAll(); }
+  }
+}
+
+let reloadTimer;
+function scheduleReload() { clearTimeout(reloadTimer); reloadTimer = setTimeout(loadAll, 200); }
+
+function subscribe() {
+  if (channel) db.removeChannel(channel);
+  channel = db.channel('vorrat-sync');
+  for (const table of ['vorraete', 'kategorien', 'lagerorte']) {
+    channel.on('postgres_changes', { event: '*', schema: 'public', table }, scheduleReload);
+  }
+  channel.subscribe();
+}
+
+// Auf dem iPhone wird die Verbindung im Hintergrund oft getrennt → beim Zurückkehren neu laden
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && state.user) { subscribe(); loadAll(); }
+});
+window.addEventListener('online', () => state.user && loadAll());
+window.addEventListener('offline', () => setOffline(true));
+function setOffline(off) { $('offlineBanner').classList.toggle('hidden', !off); }
+
+// ================= ANZEIGE =================
+function render() { renderChips(); renderList(); if ($('settingsSheet').classList.contains('open')) renderSettings(); }
+
+function renderChips() {
+  const chips = [{ id: 'alle', name: 'Alle' }, ...state.lagerorte];
+  $('locationChips').innerHTML = chips.map(o =>
+    `<button class="chip ${state.ort === o.id ? 'active' : ''}" data-ort="${o.id}">${esc(o.name)}</button>`
+  ).join('');
+  $('locationChips').classList.toggle('hidden', state.lagerorte.length < 2);
+}
+$('locationChips').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-ort]'); if (!b) return;
+  state.ort = b.dataset.ort === 'alle' ? 'alle' : Number(b.dataset.ort);
+  render();
+});
+
+function renderList() {
+  const q = state.suche.toLowerCase();
+  let items = state.vorraete.filter(v =>
+    (state.ort === 'alle' || v.lagerort_id === state.ort) &&
+    (state.showEmpty || Number(v.menge) > 0) &&
+    (!q || v.name.toLowerCase().includes(q) || (v.notiz || '').toLowerCase().includes(q))
+  );
+
+  const groups = state.kategorien.map(k => ({ key: String(k.id), name: k.name, items: [] }));
+  const ohne = { key: 'ohne', name: 'Ohne Kategorie', items: [] };
+  const map = new Map(groups.map(g => [g.key, g]));
+  for (const v of items) (map.get(String(v.kategorie_id)) || ohne).items.push(v);
+  groups.push(ohne);
+
+  const visible = groups.filter(g => g.items.length);
+  if (!visible.length) {
+    $('list').innerHTML = `<div class="empty-state">${state.vorraete.length ? 'Nichts gefunden.' : 'Noch keine Vorräte – tippe auf +.'}</div>`;
+    return;
+  }
+  const ortName = (id) => state.lagerorte.find(o => o.id === id)?.name;
+  const zeigeOrt = state.ort === 'alle' && state.lagerorte.length > 1;
+
+  $('list').innerHTML = visible.map(g => {
+    g.items.sort((a, b) => ((Number(b.menge) > 0) - (Number(a.menge) > 0)) || byName(a, b));
+    const vorhanden = g.items.filter(v => Number(v.menge) > 0).length;
+    const collapsed = !q && state.collapsed.has(g.key);
+    return `
+    <section class="group ${collapsed ? 'collapsed' : ''}" data-group="${g.key}">
+      <button class="group-head" data-toggle="${g.key}">
+        <h2><span class="arrow">▾</span>${esc(g.name)}</h2>
+        <span class="count">${vorhanden}</span>
+      </button>
+      <div class="items">
+        ${g.items.map(v => {
+          const leer = Number(v.menge) <= 0;
+          const ab = ablaufInfo(v.ablaufdatum);
+          const sub = [];
+          if (leer) sub.push('<span class="badge warn">aufgebraucht</span>');
+          if (ab) sub.push(`<span class="badge ${ab.warn ? 'warn' : ''}">${esc(ab.text)}</span>`);
+          if (zeigeOrt && ortName(v.lagerort_id)) sub.push(`<span>${esc(ortName(v.lagerort_id))}</span>`);
+          if (v.notiz) sub.push(`<span>${esc(v.notiz)}</span>`);
+          return `
+          <div class="item ${leer ? 'empty' : ''}" data-id="${v.id}">
+            <button class="item-main" data-edit="${v.id}">
+              <div class="item-name">${esc(v.name)}</div>
+              ${sub.length ? `<div class="item-sub">${sub.join('')}</div>` : ''}
+            </button>
+            <div class="stepper">
+              <button data-step="-1" data-id="${v.id}" aria-label="weniger">−</button>
+              <div class="qty">${nf.format(Number(v.menge))} <small>${esc(v.einheit)}</small></div>
+              <button data-step="1" data-id="${v.id}" aria-label="mehr">+</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </section>`;
+  }).join('');
+}
+
+$('list').addEventListener('click', (e) => {
+  const t = e.target.closest('[data-toggle]');
+  if (t) {
+    const k = t.dataset.toggle;
+    state.collapsed.has(k) ? state.collapsed.delete(k) : state.collapsed.add(k);
+    save('collapsed', [...state.collapsed]);
+    t.closest('.group').classList.toggle('collapsed');
+    return;
+  }
+  const s = e.target.closest('[data-step]');
+  if (s) { changeMenge(Number(s.dataset.id), Number(s.dataset.step)); return; }
+  const ed = e.target.closest('[data-edit]');
+  if (ed) openItem(Number(ed.dataset.edit));
+});
+
+$('search').addEventListener('input', (e) => { state.suche = e.target.value.trim(); renderList(); });
+window.addEventListener('scroll', () => $('header').classList.toggle('scrolled', window.scrollY > 4), { passive: true });
+
+// ================= MENGE +/- =================
+function changeMenge(id, richtung) {
+  const v = state.vorraete.find(x => x.id === id); if (!v) return;
+  const neu = Math.max(0, Math.round((Number(v.menge) + richtung * schritt(v.einheit)) * 100) / 100);
+  if (neu === Number(v.menge)) return;
+  v.menge = neu;
+  renderList();
+  // Erst speichern, wenn kurz nicht mehr getippt wurde
+  clearTimeout(pendingSaves.get(id));
+  pendingSaves.set(id, setTimeout(async () => {
+    const { error } = await db.from('vorraete').update({ menge: neu }).eq('id', id);
+    pendingSaves.delete(id);
+    if (error) fehler(error, 'Menge nicht gespeichert');
+    if (!pendingSaves.size) loadAll();
+  }, 600));
+}
+
+// ================= SHEETS =================
+function openSheet(id) { $(id).classList.add('open'); document.body.style.overflow = 'hidden'; }
+function closeSheet(id) { $(id).classList.remove('open'); document.body.style.overflow = ''; }
+document.querySelectorAll('.backdrop').forEach(b => {
+  b.addEventListener('click', (e) => { if (e.target === b || e.target.closest('[data-close]')) closeSheet(b.id); });
+});
+
+// ================= VORRAT BEARBEITEN =================
+function fillSelect(sel, list, value, neuText) {
+  sel.innerHTML = `<option value="">– keine –</option>` +
+    list.map(x => `<option value="${x.id}">${esc(x.name)}</option>`).join('') +
+    `<option value="__neu">＋ ${neuText}</option>`;
+  sel.value = value ?? '';
+}
+
+function openItem(id = null) {
+  state.editingId = id;
+  const v = id ? state.vorraete.find(x => x.id === id) : null;
+  $('itemSheetTitle').textContent = v ? 'Bearbeiten' : 'Neuer Vorrat';
+  $('fName').value = v?.name ?? '';
+  $('fMenge').value = v ? nf.format(Number(v.menge)) : '1';
+  $('fEinheit').innerHTML = [...new Set([...EINHEITEN, v?.einheit].filter(Boolean))]
+    .map(e => `<option>${esc(e)}</option>`).join('');
+  $('fEinheit').value = v?.einheit ?? 'Stück';
+  fillSelect($('fKategorie'), state.kategorien, v?.kategorie_id, 'Neue Kategorie …');
+  const defOrt = v ? v.lagerort_id : (state.ort !== 'alle' ? state.ort : state.lagerorte[0]?.id);
+  fillSelect($('fLagerort'), state.lagerorte, defOrt, 'Neuer Lagerort …');
+  $('fAblauf').value = v?.ablaufdatum ?? '';
+  $('fNotiz').value = v?.notiz ?? '';
+  $('fNewKat').value = ''; $('fNewOrt').value = '';
+  $('newKatField').classList.add('hidden'); $('newOrtField').classList.add('hidden');
+  $('deleteItemBtn').classList.toggle('hidden', !v);
+  $('itemMeta').textContent = v?.geaendert_am
+    ? `Zuletzt geändert ${new Date(v.geaendert_am).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}` +
+      (v.geaendert_von ? ` von ${v.geaendert_von}` : '')
+    : '';
+  openSheet('itemSheet');
+  if (!v) setTimeout(() => $('fName').focus(), 300);
+}
+$('addBtn').addEventListener('click', () => openItem(null));
+$('fKategorie').addEventListener('change', (e) => {
+  const neu = e.target.value === '__neu';
+  $('newKatField').classList.toggle('hidden', !neu); if (neu) $('fNewKat').focus();
+});
+$('fLagerort').addEventListener('change', (e) => {
+  const neu = e.target.value === '__neu';
+  $('newOrtField').classList.toggle('hidden', !neu); if (neu) $('fNewOrt').focus();
+});
+
+async function ensureEintrag(table, liste, name) {
+  name = name.trim(); if (!name) return null;
+  const vorhanden = liste.find(x => x.name.toLowerCase() === name.toLowerCase());
+  if (vorhanden) return vorhanden.id;
+  const sortierung = Math.max(0, ...liste.map(x => x.sortierung)) + 1;
+  const { data, error } = await db.from(table).insert({ name, sortierung }).select().single();
+  if (error) throw error;
+  liste.push(data);
+  return data.id;
+}
+
+$('saveItemBtn').addEventListener('click', async () => {
+  const name = $('fName').value.trim();
+  if (!name) { toast('Bitte einen Namen eingeben'); $('fName').focus(); return; }
+  const menge = parseZahl($('fMenge').value);
+  if (menge === null || menge < 0) { toast('Bitte eine gültige Menge eingeben'); $('fMenge').focus(); return; }
+  const btn = $('saveItemBtn'); btn.disabled = true;
+  try {
+    let kat = $('fKategorie').value, ort = $('fLagerort').value;
+    if (kat === '__neu') kat = await ensureEintrag('kategorien', state.kategorien, $('fNewKat').value);
+    if (ort === '__neu') ort = await ensureEintrag('lagerorte', state.lagerorte, $('fNewOrt').value);
+    const row = {
+      name, menge, einheit: $('fEinheit').value,
+      kategorie_id: kat ? Number(kat) : null,
+      lagerort_id: ort ? Number(ort) : null,
+      ablaufdatum: $('fAblauf').value || null,
+      notiz: $('fNotiz').value.trim() || null,
+    };
+    const { error } = state.editingId
+      ? await db.from('vorraete').update(row).eq('id', state.editingId)
+      : await db.from('vorraete').insert(row);
+    if (error) throw error;
+    closeSheet('itemSheet');
+    toast(state.editingId ? 'Gespeichert' : `„${name}“ hinzugefügt`);
+    loadAll();
+  } catch (err) { fehler(err, 'Speichern fehlgeschlagen'); }
+  finally { btn.disabled = false; }
+});
+
+$('deleteItemBtn').addEventListener('click', async () => {
+  const v = state.vorraete.find(x => x.id === state.editingId); if (!v) return;
+  if (!confirm(`„${v.name}“ wirklich löschen?`)) return;
+  const { error } = await db.from('vorraete').delete().eq('id', v.id);
+  if (error) return fehler(error, 'Löschen fehlgeschlagen');
+  closeSheet('itemSheet'); toast('Gelöscht'); loadAll();
+});
+
+// ================= EINSTELLUNGEN: KATEGORIEN & LAGERORTE =================
+$('settingsBtn').addEventListener('click', () => { renderSettings(); openSheet('settingsSheet'); });
+
+function renderSettings() {
+  $('showEmptyToggle').checked = state.showEmpty;
+  const rows = (list, table) => list.map(x => {
+    const anzahl = state.vorraete.filter(v => (table === 'kategorien' ? v.kategorie_id : v.lagerort_id) === x.id).length;
+    return `<div class="list-row">
+      <input value="${esc(x.name)}" data-rename="${table}" data-id="${x.id}" aria-label="Name">
+      <span style="color:var(--muted);font-size:13px">${anzahl}</span>
+      <button class="del" data-del="${table}" data-id="${x.id}" aria-label="Löschen">✕</button>
+    </div>`;
+  }).join('') || `<div class="list-row" style="color:var(--muted);padding:12px">Noch keine Einträge</div>`;
+  // Nicht neu zeichnen, während jemand gerade einen Namen tippt
+  const active = document.activeElement;
+  if (active && active.dataset && active.dataset.rename) return;
+  $('katList').innerHTML = rows(state.kategorien, 'kategorien');
+  $('ortList').innerHTML = rows(state.lagerorte, 'lagerorte');
+}
+
+$('showEmptyToggle').addEventListener('change', (e) => {
+  state.showEmpty = e.target.checked; save('showEmpty', state.showEmpty); renderList();
+});
+
+async function addEintrag(table, inputId) {
+  const name = $(inputId).value.trim(); if (!name) return;
+  const liste = table === 'kategorien' ? state.kategorien : state.lagerorte;
+  if (liste.some(x => x.name.toLowerCase() === name.toLowerCase())) { toast('Gibt es schon'); return; }
+  try {
+    await ensureEintrag(table, liste, name);
+    $(inputId).value = '';
+    toast(`„${name}“ angelegt`);
+    loadAll(); renderSettings();
+  } catch (err) { fehler(err); }
+}
+$('addKatBtn').addEventListener('click', () => addEintrag('kategorien', 'newKatName'));
+$('addOrtBtn').addEventListener('click', () => addEintrag('lagerorte', 'newOrtName'));
+$('newKatName').addEventListener('keydown', (e) => { if (e.key === 'Enter') addEintrag('kategorien', 'newKatName'); });
+$('newOrtName').addEventListener('keydown', (e) => { if (e.key === 'Enter') addEintrag('lagerorte', 'newOrtName'); });
+
+// Umbenennen: beim Verlassen des Feldes speichern
+document.addEventListener('change', async (e) => {
+  const inp = e.target.closest('[data-rename]'); if (!inp) return;
+  const table = inp.dataset.rename, id = Number(inp.dataset.id), name = inp.value.trim();
+  const liste = table === 'kategorien' ? state.kategorien : state.lagerorte;
+  const alt = liste.find(x => x.id === id);
+  if (!name || !alt || name === alt.name) { if (alt) inp.value = alt.name; return; }
+  const { error } = await db.from(table).update({ name }).eq('id', id);
+  if (error) { inp.value = alt.name; return fehler(error, 'Umbenennen fehlgeschlagen'); }
+  alt.name = name; toast('Umbenannt'); render();
+});
+
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-del]'); if (!b) return;
+  const table = b.dataset.del, id = Number(b.dataset.id);
+  const liste = table === 'kategorien' ? state.kategorien : state.lagerorte;
+  const x = liste.find(y => y.id === id); if (!x) return;
+  const anzahl = state.vorraete.filter(v => (table === 'kategorien' ? v.kategorie_id : v.lagerort_id) === id).length;
+  const hinweis = anzahl ? `\n\n${anzahl} Vorrät${anzahl === 1 ? '' : 'e'} bleiben erhalten, aber ohne ${table === 'kategorien' ? 'Kategorie' : 'Lagerort'}.` : '';
+  if (!confirm(`„${x.name}“ löschen?${hinweis}`)) return;
+  const { error } = await db.from(table).delete().eq('id', id);
+  if (error) return fehler(error, 'Löschen fehlgeschlagen');
+  toast('Gelöscht'); loadAll();
+});
+
+// ================= START =================
+const { data: { session } } = await db.auth.getSession();
+if (!session) { state.user = false; $('login').classList.remove('hidden'); }
+</script>
+</body>
+</html>
