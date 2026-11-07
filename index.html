@@ -159,6 +159,8 @@
   .field { display: grid; gap: 5px; margin-bottom: 12px; }
   .field label { font-size: 13px; color: var(--muted); font-weight: 500; }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row2 > .field { min-width: 0; }
+  input[type=date] { min-width: 0; -webkit-appearance: none; appearance: none; min-height: 46px; }
   .sheet-actions { display: grid; gap: 10px; margin-top: 18px; }
   .btn-danger { color: var(--danger); padding: 12px; border-radius: 12px; background: var(--card); font-weight: 500; }
   .meta { font-size: 12px; color: var(--muted); text-align: center; margin-top: 12px; }
@@ -272,9 +274,15 @@
         <label for="fNewOrt">Neuer Lagerort</label>
         <input id="fNewOrt" autocomplete="off" placeholder="z. B. Kühlschrank">
       </div>
-      <div class="field">
-        <label for="fAblauf">Haltbar bis (optional)</label>
-        <input id="fAblauf" type="date">
+      <div class="row2">
+        <div class="field">
+          <label for="fEingefroren">Eingefroren am</label>
+          <input id="fEingefroren" type="date">
+        </div>
+        <div class="field">
+          <label for="fAblauf">Haltbar bis</label>
+          <input id="fAblauf" type="date">
+        </div>
       </div>
       <div class="field">
         <label for="fNotiz">Notiz (optional)</label>
@@ -387,6 +395,13 @@ const EINHEITEN = ['Stück', 'Packung', 'Portion', 'g', 'kg', 'ml', 'l', 'Dose',
 // Neue Version: oben einen Eintrag ergänzen. Die App zeigt die Neuerungen einmalig nach dem Update an.
 const RELEASES = [
   {
+    version: '1.2', datum: '07.11.2026', titel: 'Einfrierdatum',
+    punkte: [
+      'Neues Feld „Eingefroren am“: wird beim Hinzufügen automatisch auf heute gesetzt und lässt sich in der Bearbeitung ändern oder leeren',
+      'Was seit mehr als 4 Monaten eingefroren ist, wird in der Liste orange markiert',
+    ],
+  },
+  {
     version: '1.1', datum: '07.11.2026', titel: 'Ideen-Sammlung',
     punkte: [
       'Neuer Bereich „Ideen für künftige Versionen“ unter ⚙︎ → Über die App: Ideen gemeinsam sammeln, abhaken und löschen',
@@ -446,6 +461,18 @@ function toast(msg) {
 function fehler(err, text = 'Das hat nicht geklappt') {
   console.error(err);
   toast(text + (err?.message ? ': ' + err.message : ''));
+}
+
+const EINFRIER_MONATE = 4;
+function heuteISO() { const d = new Date(); return new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+function einfrierInfo(datum) {
+  if (!datum) return null;
+  const d = new Date(datum + 'T00:00:00');
+  const grenze = new Date(d); grenze.setMonth(grenze.getMonth() + EINFRIER_MONATE);
+  const heute = new Date(); heute.setHours(0, 0, 0, 0);
+  if (heute < grenze) return null;
+  const monate = (heute.getFullYear() - d.getFullYear()) * 12 + heute.getMonth() - d.getMonth() - (heute.getDate() < d.getDate() ? 1 : 0);
+  return { text: `${monate} Mon. eingefroren` };
 }
 
 function ablaufInfo(datum) {
@@ -605,6 +632,8 @@ function renderList() {
           const sub = [];
           if (leer) sub.push('<span class="badge warn">aufgebraucht</span>');
           if (ab) sub.push(`<span class="badge ${ab.warn ? 'warn' : ''}">${esc(ab.text)}</span>`);
+          const ef = !leer && einfrierInfo(v.eingefroren_am);
+          if (ef) sub.push(`<span class="badge warn">❄︎ ${esc(ef.text)}</span>`);
           if (zeigeOrt && ortName(v.lagerort_id)) sub.push(`<span>${esc(ortName(v.lagerort_id))}</span>`);
           if (v.notiz) sub.push(`<span>${esc(v.notiz)}</span>`);
           return `
@@ -688,6 +717,7 @@ function openItem(id = null) {
   const defOrt = v ? v.lagerort_id : (state.ort !== 'alle' ? state.ort : state.lagerorte[0]?.id);
   fillSelect($('fLagerort'), state.lagerorte, defOrt, 'Neuer Lagerort …');
   $('fAblauf').value = v?.ablaufdatum ?? '';
+  $('fEingefroren').value = v ? (v.eingefroren_am ?? '') : heuteISO();
   $('fNotiz').value = v?.notiz ?? '';
   $('fNewKat').value = ''; $('fNewOrt').value = '';
   $('newKatField').classList.add('hidden'); $('newOrtField').classList.add('hidden');
@@ -735,6 +765,7 @@ $('saveItemBtn').addEventListener('click', async () => {
       kategorie_id: kat ? Number(kat) : null,
       lagerort_id: ort ? Number(ort) : null,
       ablaufdatum: $('fAblauf').value || null,
+      eingefroren_am: $('fEingefroren').value || null,
       notiz: $('fNotiz').value.trim() || null,
     };
     const { error } = state.editingId
