@@ -44,7 +44,8 @@
     }
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  html, body { margin: 0; background: var(--bg); color: var(--text); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { overflow-x: clip; } /* Sicherheitsnetz: nie seitlich verrutschen (ohne das Mitlaufen der Kopfzeile zu stören) */
   body {
     font: 16px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
@@ -216,24 +217,24 @@
   .tab.active { color: var(--accent); }
 
   /* ---------- Übersicht ---------- */
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
-  .stat { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 12px 10px; text-align: left; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+  .stat { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 10px 10px; text-align: left; min-width: 0; }
   .stat .zahl { font-size: 28px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
-  .stat .label { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.25; }
+  .stat .label { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.25; overflow-wrap: anywhere; hyphens: auto; }
   .stat.warn .zahl { color: var(--warn); }
   .stat.ok .zahl { color: var(--accent); }
-  .kat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .kat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .kat-card {
     background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
-    padding: 12px 14px; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 12px 12px 12px 14px; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 8px; min-width: 0;
   }
-  .kat-card .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .kat-card .anz { font-size: 20px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .kat-card .name { font-weight: 500; line-height: 1.25; overflow-wrap: anywhere; hyphens: auto; }
+  .kat-card .anz { flex: none; font-size: 20px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
   .kat-card .sub { font-size: 12px; color: var(--muted); }
   .ov-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; padding: 11px 14px; border-top: 1px solid var(--line); }
   .ov-row:first-child { border-top: 0; }
-  .ov-row .name { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ov-row .info { font-size: 13px; color: var(--muted); flex: none; text-align: right; }
+  .ov-row .name { font-weight: 500; min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ov-row .info { font-size: 13px; color: var(--muted); flex: 0 1 auto; min-width: 0; text-align: right; }
   .ov-ok { padding: 12px 14px; color: var(--muted); font-size: 14px; }
 
   /* ---------- Übersicht (Artikel) ---------- */
@@ -493,6 +494,13 @@ const EINFRIER_MONATE = 4;
 // ================= RELEASE NOTES =================
 // Neue Version: oben einen Eintrag ergänzen. Die App zeigt die Neuerungen einmalig nach dem Update an.
 const RELEASES = [
+  {
+    version: '2.2', datum: '21.11.2026', titel: 'Passt aufs Handy',
+    punkte: [
+      'Auswertung: Die Kategorie-Kacheln mit langen Namen (z. B. „Fertiggerichte & Snacks“) machten die Seite breiter als den Bildschirm – jetzt passt alles, lange Namen werden umgebrochen',
+      'Kennzahlen und Listen in der Auswertung passen sich auch an kleine iPhones an',
+    ],
+  },
   {
     version: '2.1', datum: '21.11.2026', titel: 'Aufgeräumte Übersicht',
     punkte: [
