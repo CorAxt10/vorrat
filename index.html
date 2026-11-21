@@ -101,7 +101,7 @@
   }
 
   /* ---------- Liste ---------- */
-  main { padding: 6px 16px 110px; }
+  main { padding: 6px 16px calc(150px + env(safe-area-inset-bottom)); }
   .group { margin-top: 16px; }
   .group-head {
     display: flex; align-items: center; justify-content: space-between; width: 100%;
@@ -134,7 +134,7 @@
   .empty-state { text-align: center; color: var(--muted); padding: 48px 16px; }
 
   .fab {
-    position: fixed; right: calc(20px + env(safe-area-inset-right)); bottom: calc(22px + env(safe-area-inset-bottom));
+    position: fixed; right: calc(20px + env(safe-area-inset-right)); bottom: calc(78px + env(safe-area-inset-bottom));
     width: 58px; height: 58px; border-radius: 50%; background: var(--accent); color: #fff;
     font-size: 30px; line-height: 1; box-shadow: 0 6px 18px rgba(47, 125, 99, .35); z-index: 6;
   }
@@ -196,11 +196,46 @@
   .idee .del { color: var(--danger); padding: 0 6px; font-size: 18px; flex: none; }
 
   .toast {
-    position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+    position: fixed; left: 50%; bottom: calc(150px + env(safe-area-inset-bottom)); transform: translateX(-50%);
     background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 14px;
     z-index: 30; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; text-align: center;
   }
   .toast.show { opacity: 1; }
+
+  /* ---------- Tab-Leiste ---------- */
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 7;
+    display: grid; grid-template-columns: 1fr 1fr;
+    background: color-mix(in srgb, var(--card) 88%, transparent);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+    padding: 6px env(safe-area-inset-right) calc(6px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
+  }
+  .tab { display: grid; justify-items: center; gap: 2px; padding: 4px 0; color: var(--muted); font-size: 11px; font-weight: 500; }
+  .tab svg { width: 26px; height: 26px; }
+  .tab.active { color: var(--accent); }
+
+  /* ---------- Übersicht ---------- */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
+  .stat { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 12px 10px; text-align: left; }
+  .stat .zahl { font-size: 28px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat .label { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.25; }
+  .stat.warn .zahl { color: var(--warn); }
+  .stat.ok .zahl { color: var(--accent); }
+  .kat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .kat-card {
+    background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 12px 14px; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+  .kat-card .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kat-card .anz { font-size: 20px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .kat-card .sub { font-size: 12px; color: var(--muted); }
+  .ov-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; text-align: left; padding: 11px 14px; border-top: 1px solid var(--line); }
+  .ov-row:first-child { border-top: 0; }
+  .ov-row .name { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ov-row .info { font-size: 13px; color: var(--muted); flex: none; text-align: right; }
+  .ov-ok { padding: 12px 14px; color: var(--muted); font-size: 14px; }
+
 </style>
 </head>
 <body>
@@ -221,18 +256,31 @@
 <section id="app" class="hidden">
   <header id="header">
     <div class="topline">
-      <h1>Vorrat</h1>
+      <h1 id="viewTitle">Vorräte</h1>
       <button class="icon-btn" id="settingsBtn" aria-label="Einstellungen">⚙︎</button>
     </div>
-    <div class="search">
-      <span>🔍</span>
-      <input id="search" type="search" placeholder="Suchen …" autocomplete="off">
+    <div id="listControls">
+      <div class="search">
+        <span>🔍</span>
+        <input id="search" type="search" placeholder="Suchen …" autocomplete="off">
+      </div>
+      <div class="chips" id="locationChips"></div>
     </div>
-    <div class="chips" id="locationChips"></div>
   </header>
   <div class="banner hidden" id="offlineBanner">Keine Verbindung – Änderungen werden evtl. nicht gespeichert.</div>
+  <main id="overview" class="hidden"></main>
   <main id="list"></main>
   <button class="fab" id="addBtn" aria-label="Vorrat hinzufügen">+</button>
+  <nav class="tabbar">
+    <button class="tab" data-tab="uebersicht">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>
+      Übersicht
+    </button>
+    <button class="tab" data-tab="vorraete">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>
+      Vorräte
+    </button>
+  </nav>
 </section>
 
 <!-- ================= SHEET: Vorrat bearbeiten ================= -->
@@ -396,6 +444,15 @@ const EINHEITEN = ['Stück', 'Packung', 'Portion', 'g', 'kg', 'ml', 'l', 'Dose',
 // Neue Version: oben einen Eintrag ergänzen. Die App zeigt die Neuerungen einmalig nach dem Update an.
 const RELEASES = [
   {
+    version: '1.4', datum: '21.11.2026', titel: 'Zwei Ansichten',
+    punkte: [
+      'Neue Tab-Leiste unten: links „Übersicht“, rechts „Vorräte“ (die bisherige Liste)',
+      'Übersicht mit Kennzahlen, allen Kategorien und Lagerorten, „Bald ablaufend“, „Lange eingefroren“, „Aufgebraucht“ und „Zuletzt geändert“',
+      'Antippen einer Kategorie springt direkt zu ihr in der Vorräte-Liste, Antippen eines Vorrats öffnet die Bearbeitung',
+      'Die App merkt sich, welche Ansicht zuletzt offen war',
+    ],
+  },
+  {
     version: '1.3', datum: '07.11.2026', titel: 'Einfrierdatum immer sichtbar',
     punkte: [
       'Das Einfrierdatum steht jetzt bei jedem Vorrat in der Liste (❄︎)',
@@ -446,6 +503,7 @@ const state = {
   showEmpty: load('showEmpty', true),
   editingId: null,
   user: null,
+  tab: load('tab', 'uebersicht'),
 };
 const pendingSaves = new Map(); // id -> Timer (verzögertes Speichern bei +/-)
 let channel = null;
@@ -525,6 +583,7 @@ function startApp() {
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
   $('userEmail').textContent = 'Angemeldet als ' + state.user.email;
+  renderTabs();
   loadAll();
   subscribe();
   zeigeNeuerungen();
@@ -587,7 +646,132 @@ window.addEventListener('offline', () => setOffline(true));
 function setOffline(off) { $('offlineBanner').classList.toggle('hidden', !off); }
 
 // ================= ANZEIGE =================
-function render() { renderChips(); renderList(); if ($('settingsSheet').classList.contains('open')) renderSettings(); }
+function render() {
+  renderChips(); renderList(); renderOverview(); renderTabs();
+  if ($('settingsSheet').classList.contains('open')) renderSettings();
+}
+
+// ================= TABS =================
+function renderTabs() {
+  const ov = state.tab === 'uebersicht';
+  $('overview').classList.toggle('hidden', !ov);
+  $('list').classList.toggle('hidden', ov);
+  $('listControls').classList.toggle('hidden', ov);
+  $('viewTitle').textContent = ov ? 'Übersicht' : 'Vorräte';
+  document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === state.tab));
+}
+function switchTab(tab, { scroll = true } = {}) {
+  state.tab = tab; save('tab', tab);
+  renderTabs();
+  if (scroll) window.scrollTo(0, 0);
+}
+document.querySelector('.tabbar').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-tab]'); if (!b) return;
+  if (b.dataset.tab === state.tab) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  switchTab(b.dataset.tab);
+});
+
+// Aus der Übersicht zu einer Kategorie / einem Lagerort in der Liste springen
+function zeigeInListe({ kategorie = null, ort = null } = {}) {
+  state.suche = ''; $('search').value = '';
+  state.ort = ort ?? 'alle';
+  if (kategorie) { state.collapsed.delete(kategorie); save('collapsed', [...state.collapsed]); }
+  renderChips(); renderList();
+  switchTab('vorraete');
+  if (kategorie) {
+    const el = document.querySelector(`[data-group="${CSS.escape(kategorie)}"]`);
+    if (el) window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - $('header').offsetHeight - 4);
+  }
+}
+
+// ================= ÜBERSICHT =================
+function renderOverview() {
+  const vorhanden = state.vorraete.filter(v => Number(v.menge) > 0);
+  const leer = state.vorraete.filter(v => Number(v.menge) <= 0);
+  const heute = new Date(); heute.setHours(0, 0, 0, 0);
+  const tageBis = (d) => Math.round((new Date(d + 'T00:00:00') - heute) / 86400000);
+  const bald = vorhanden.filter(v => v.ablaufdatum && tageBis(v.ablaufdatum) <= 30)
+    .sort((a, b) => a.ablaufdatum.localeCompare(b.ablaufdatum));
+  const lange = vorhanden.filter(v => einfrierInfo(v.eingefroren_am)?.warn)
+    .sort((a, b) => a.eingefroren_am.localeCompare(b.eingefroren_am));
+  const zuletzt = [...state.vorraete].filter(v => v.geaendert_am)
+    .sort((a, b) => b.geaendert_am.localeCompare(a.geaendert_am)).slice(0, 5);
+
+  const row = (v, info, warn = false) => `
+    <button class="ov-row" data-edit="${v.id}">
+      <span class="name">${esc(v.name)}</span>
+      <span class="info" ${warn ? 'style="color:var(--warn)"' : ''}>${info}</span>
+    </button>`;
+  const section = (titel, inhalt, id = '') => `
+    <div class="section-title" ${id ? `id="${id}"` : ''}>${titel}</div>
+    <div class="list-card">${inhalt}</div>`;
+  const kurz = (d) => new Date(d + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
+
+  // Kennzahlen
+  let html = `
+    <div class="stats">
+      <button class="stat ok" data-goto="liste"><div class="zahl">${vorhanden.length}</div><div class="label">Vorräte vorhanden</div></button>
+      <button class="stat ${bald.length ? 'warn' : ''}" data-goto="ov-bald"><div class="zahl">${bald.length}</div><div class="label">bald ablaufend</div></button>
+      <button class="stat ${lange.length ? 'warn' : ''}" data-goto="ov-lange"><div class="zahl">${lange.length}</div><div class="label">≥ ${EINFRIER_MONATE} Mon. eingefroren</div></button>
+    </div>`;
+
+  // Kategorien
+  const katKarten = [...state.kategorien.map(k => ({ key: String(k.id), name: k.name })), { key: 'ohne', name: 'Ohne Kategorie' }]
+    .map(k => {
+      const items = state.vorraete.filter(v => (k.key === 'ohne' ? !state.kategorien.some(x => x.id === v.kategorie_id) : String(v.kategorie_id) === k.key));
+      const da = items.filter(v => Number(v.menge) > 0).length;
+      const warn = items.some(v => Number(v.menge) > 0 && ((v.ablaufdatum && tageBis(v.ablaufdatum) <= 30) || einfrierInfo(v.eingefroren_am)?.warn));
+      return { ...k, gesamt: items.length, da, warn };
+    })
+    .filter(k => k.key !== 'ohne' || k.gesamt);
+  html += `<div class="section-title">Kategorien</div>
+    <div class="kat-grid">${katKarten.map(k => `
+      <button class="kat-card" data-kat="${k.key}">
+        <div style="min-width:0"><div class="name">${esc(k.name)}</div>
+          <div class="sub">${k.warn ? '<span style="color:var(--warn)">● prüfen</span>' : (k.da ? 'vorhanden' : 'leer')}</div></div>
+        <div class="anz" ${k.da ? '' : 'style="color:var(--muted)"'}>${k.da}</div>
+      </button>`).join('') || '<div class="ov-ok">Noch keine Kategorien</div>'}</div>`;
+
+  // Lagerorte (nur wenn mehrere)
+  if (state.lagerorte.length > 1) {
+    html += section('Lagerorte', state.lagerorte.map(o => {
+      const n = vorhanden.filter(v => v.lagerort_id === o.id).length;
+      return `<button class="ov-row" data-ort-goto="${o.id}"><span class="name">${esc(o.name)}</span><span class="info">${n} ›</span></button>`;
+    }).join(''));
+  }
+
+  // Warnungen
+  html += section('Bald ablaufend', bald.length
+    ? bald.map(v => { const t = tageBis(v.ablaufdatum); return row(v, t < 0 ? `abgelaufen ${kurz(v.ablaufdatum)}` : t === 0 ? 'heute' : `in ${t} Tag${t === 1 ? '' : 'en'}`, true); }).join('')
+    : '<div class="ov-ok">✓ Nichts läuft in den nächsten 30 Tagen ab</div>', 'ov-bald');
+  html += section(`Lange eingefroren (≥ ${EINFRIER_MONATE} Monate)`, lange.length
+    ? lange.map(v => row(v, `❄︎ ${esc(einfrierInfo(v.eingefroren_am).text)}`, true)).join('')
+    : '<div class="ov-ok">✓ Alles frisch eingefroren</div>', 'ov-lange');
+  if (leer.length) {
+    html += section('Aufgebraucht – nachkaufen?', [...leer].sort(byName).map(v => row(v, 'aufgebraucht')).join(''));
+  }
+  if (zuletzt.length) {
+    html += section('Zuletzt geändert', zuletzt.map(v => {
+      const wann = new Date(v.geaendert_am).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const wer = v.geaendert_von ? ' · ' + esc(v.geaendert_von.split('@')[0]) : '';
+      return row(v, `${nf.format(Number(v.menge))} ${esc(v.einheit)}<br><span style="font-size:12px">${wann}${wer}</span>`);
+    }).join(''));
+  }
+  if (!state.vorraete.length) html = '<div class="empty-state">Noch keine Vorräte – tippe auf +.</div>';
+  $('overview').innerHTML = html;
+}
+
+$('overview').addEventListener('click', (e) => {
+  const ed = e.target.closest('[data-edit]'); if (ed) return openItem(Number(ed.dataset.edit));
+  const k = e.target.closest('[data-kat]'); if (k) return zeigeInListe({ kategorie: k.dataset.kat });
+  const o = e.target.closest('[data-ort-goto]'); if (o) return zeigeInListe({ ort: Number(o.dataset.ortGoto) });
+  const g = e.target.closest('[data-goto]');
+  if (g) {
+    if (g.dataset.goto === 'liste') return zeigeInListe();
+    const el = $(g.dataset.goto);
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - $('header').offsetHeight - 8, behavior: 'smooth' });
+  }
+});
 
 function renderChips() {
   const chips = [{ id: 'alle', name: 'Alle' }, ...state.lagerorte];
