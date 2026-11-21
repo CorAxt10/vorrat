@@ -494,6 +494,13 @@ const EINFRIER_MONATE = 4;
 // Neue Version: oben einen Eintrag ergänzen. Die App zeigt die Neuerungen einmalig nach dem Update an.
 const RELEASES = [
   {
+    version: '2.1', datum: '21.11.2026', titel: 'Aufgeräumte Übersicht',
+    punkte: [
+      'Das Einfrierdatum steht in der Übersicht nicht mehr beim Lebensmittel, sondern nur noch bei den einzelnen Packungen',
+      'Stattdessen erscheint in der Übersicht nur dann ein oranger Hinweis, wenn Packungen seit mindestens 4 Monaten eingefroren sind (z. B. „1 von 3 Pkg. ≥ 4 Mon.“)',
+    ],
+  },
+  {
     version: '2.0', datum: '21.11.2026', titel: 'Packungen, Übersicht & Auswertung',
     punkte: [
       'Drei Bereiche unten: Übersicht, Einträge und Auswertung',
@@ -863,9 +870,9 @@ function renderUebersicht() {
         const pk = [...a.da].sort((x, y) => (x.eingefroren_am || '9999').localeCompare(y.eingefroren_am || '9999'));
         const sub = [];
         if (leer) sub.push('<span class="badge frost">nicht vorrätig</span>');
-        const aeltest = pk.find(v => v.eingefroren_am);
-        const ef = aeltest && einfrierInfo(aeltest.eingefroren_am);
-        if (ef) sub.push(`<span class="badge ${ef.warn ? 'warn' : 'frost'}">❄︎ ${pk.length > 1 ? 'älteste ' : ''}${esc(ef.text)}</span>`);
+        // Kein Einfrierdatum auf Artikel-Ebene – nur ein Hinweis, wenn Packungen zu lange eingefroren sind
+        const alt = pk.filter(istLange).length;
+        if (alt) sub.push(`<span class="badge warn">❄︎ ${pk.length === 1 ? `≥ ${EINFRIER_MONATE} Mon. eingefroren` : `${alt} von ${pk.length} Pkg. ≥ ${EINFRIER_MONATE} Mon.`}</span>`);
         const frueh = pk.filter(v => v.ablaufdatum).sort((x, y) => x.ablaufdatum.localeCompare(y.ablaufdatum))[0];
         const ab = frueh && ablaufInfo(frueh.ablaufdatum);
         if (ab) sub.push(`<span class="badge ${ab.warn ? 'warn' : ''}">${esc(ab.text)}</span>`);
